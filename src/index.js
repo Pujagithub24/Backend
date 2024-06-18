@@ -10,6 +10,18 @@ dotenv.config({
 
 //TQ-2
 connectDB()
+.then( () => {
+    //abhi tak sever start kaha hua , till now only mongoDB connected , humari application ne uss database 
+    //ka use karte hue listen karna shuru nhi kiya tha
+    //so for that -> app.listen(process.env.PORT || 8000 , () => {}) -> for listen to that particular port and if default port
+    //is not there then run port 8000
+    app.listen(process.env.PORT || 8000 , () => {
+        console.log(`server is running at port : ${process.env.PORT}`)
+    })
+})
+.catch( (err) => {
+   console.log("Mongo DB connection failed !!! " , err);
+})
 
 
 
