@@ -27,4 +27,19 @@ app.use(express.static("public"))
 //aur uski cookies set bhi kar paao
 app.use(cookieParser())
 
+//routes import 
+import userRouter from './routes/user.routes.js'
+
+//routes declaration
+//app.get -> pehle hum app through yhi routes likh rahe the yhi controllers likh rahe the 
+//but in this case humne router ko separate nikal k rakh diya 
+//so abb router ko laane k liye middleware laana padega
+
+//"/users" pe humko userrouter activate karvana hai (koi bhi user ne likha /users -> control chala gaya 
+//userRouter k pass)
+// app.use("/users",userRouter)
+app.use("/api/v1/users",userRouter)  //-> we are making version 1 of api
+
+//http://localhost:8000/api/v1/users/register
+//we get -> http://localhost:8000/users/register
 export { app }
