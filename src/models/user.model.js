@@ -72,7 +72,7 @@ userSchema.pre("save" ,async function (next) {
 
     //jab bhi mera yeh password ya pura filed save ho raha hai , us mai se ek password field ko lo aur 
     //encrypt karke save kardo 
-    this.password = bcrypt.hash(this.password , 10)
+    this.password = await bcrypt.hash(this.password , 10)
     next()
 })
 //this whole will run when save is called so to avoid this
@@ -123,4 +123,5 @@ userSchema.methods.generateRefreshToken = function(){
   )
 }
 
+//yeh user mongoDB se directly connected hai
 export const User = mongoose.model("User",userSchema)
