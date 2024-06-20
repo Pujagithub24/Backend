@@ -20,8 +20,9 @@ const registerUser = asyncHandler( async (req,res) => {
   //form se data aa raha hai ya direct json se data aa raha hai toh humko direct req.body mai mil jaayega
 
   //yeh chije humko req.body se mil jaayegi
+ //*****************yaha humne extract kar liye saare data points
   const {fullname , email , username , password} = req.body;
-  console.log("email: " , email)
+  //console.log("email: " , email)
 
   //instead of doing this again and again 
 //   if(fullname === ""){
@@ -30,28 +31,30 @@ const registerUser = asyncHandler( async (req,res) => {
 //we write
 
 
+//*************yaha humne check kiya empty string toh nhi h pass ki kisi ne */
 //iss case mai humne sabko ek saath check kar liya aur humko value mil gai hai
    if (
     [fullname,email,username,password].some( (field) => 
     //agar field hai toh trim kar dijiye aur agar trim karne k baad bhi empty hai toh automatically true
     //return ho jaayega , inn charo mai se ek bhi field ne true return kara toh matlab voh field khali tha
     field?.trim() === "")
-   ) {
+   ) 
+   {
           throw new ApiError(400, "All fields are required")
    }
 
 
-   //check if user already exists: username,email
-  const existedUser = User.findOne({
+   //**************check if user already exists iss username aur email se
+  const existedUser = await User.findOne({
     $or: [{ username } , { email }]
    })
 
-   //agar existedUser hai toh vahi k vahi error throw karna hai 
+   //**************agar existedUser hai toh vahi k vahi error throw karna hai 
    if (existedUser) {
      throw new ApiError(409, "User with email or username already exists")
    }
 
-
+ // console.log(req.files)
    //req.body -> yeh default express deta hai 
    //multer hume req.files ka access deta hai 
 
@@ -59,7 +62,18 @@ const registerUser = asyncHandler( async (req,res) => {
    const avatarLocalPath = req.files?.avatar[0]?.path;
    //coverImage ka bhi humne localpath le liya
    //coverImage ki jo first property hai vaha se hume optionally ho sakta hai path mil jaaye
-   const coverImageLocalPath = req.files?.coverImage[0]?.path;
+
+  // const coverImageLocalPath = req.files?.coverImage[0]?.path;
+   //coverImage k liye humne condition check hi nhi ki so we have to write below code
+
+
+  let coverImageLocalPath;
+  //Array.isArray(req.files.coverImage -> isse humko pata chalega exactly ki coverImage ka array hai ya
+  // nhi hai
+  if(req.files && Array.isArray(req.files.coverImage) && req.files.coverImage.length > 0){
+       coverImageLocalPath = req.files.coverImage[0].path
+  }
+
 
    //check for avatar ki aaya h ya nhi 
    if(!avatarLocalPath){
@@ -71,6 +85,9 @@ const registerUser = asyncHandler( async (req,res) => {
   const avatar = await uploadOnCloudinary(avatarLocalPath)
   const coverImage = await uploadOnCloudinary(coverImageLocalPath)
 
+
+  //coverImage agar localpath nhi de raha toh cloudinary humko error nhi de raha sirf empty string return 
+  //kar raha hai
 
   //phir se check karo avatar gaya h ya nhi
     if(!avatar){
@@ -91,7 +108,7 @@ const registerUser = asyncHandler( async (req,res) => {
 
 
    const createdUser = await User.findById(user._id).select(
-    //here we write that kya kya hume nhi chahiye
+    //here we write that kya kya hume nhi chahiye -> we remove password and refreshToken
     "-password -refreshToken"
    )
 

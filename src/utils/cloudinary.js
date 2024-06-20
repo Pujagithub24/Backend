@@ -24,8 +24,12 @@ const uploadOnCloudinary = async (localFilePath) => {
     })
     //file has been uploaded successfully
     //upload hone k baad jo yaha public url hai voh humko mil jaayega
-    console.log("File is uploaded on Cloudinary " , response.url);
-
+    //console.log("File is uploaded on Cloudinary " , response.url);
+    
+    //agar file successfully upload hui hai toh bhi remove ho jaayegi aur agar error aaya toh bhi 
+    //remove ho jaayegi
+    fs.unlinkSync(localFilePath)
+    
     return response;
   } 
   catch (error) {
