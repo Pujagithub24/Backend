@@ -352,7 +352,7 @@ const updateAccountDetails = asyncHandler (async (req,res) => {
     throw new ApiError(400, "All fields are required")
   }
 
-  const user = User.findByIdAndUpdate(
+  const user = await User.findByIdAndUpdate(
     req.user?._id,
     {
       //here we write mongodb operator
@@ -381,6 +381,8 @@ const updateUserAvatar = asyncHandler (async (req,res) => {
     throw new ApiError(400 , "Avatar file is missing")
    }
 
+   //Delete old image
+   
    const avatar = await uploadOnCloudinary(avatarLocalPath)
 
    //avatar jo upload kara hai usme agar url nhi hai 
@@ -439,9 +441,104 @@ const updateUserCoverImage = asyncHandler (async (req,res) => {
   .json(
    new ApiResponse(200, user , "Cover Image updated Successfully")
   )
-  
+
 })
 
+const getUserChannelProfile = asyncHandler(async ( req , res) => {
+   
+  //url se username nikaal diya
+  const {username} = req.params
+
+  if(!username?.trim()){
+     throw new ApiError(400,"Username is missing");
+  }
+
+  //means username is there
+  const channel = await User.aggregate([
+    {
+      //first match field ki pipeline hai 
+      $match: {
+         //username ko match kar diya
+         username: username?.toLowerCase()
+       }
+    },
+    {
+      //we get the subscribers 
+      $lookup: {
+        //model mai sab kuch lowercase mai convert ho jaata hai aur plural ho jaata hai
+        from: "subscriptions",
+        localField: "_id",
+        foreignField: "channel",
+        as: "subscribers"
+      }
+    },
+    {
+      //humne kitne channel subscribe kiye hai
+      $lookup: {
+        from: "subscriptions",
+        localField: "_id",
+        foreignField: "subscriber",
+        as: "subscribedTo"
+      }
+    },
+    //now to add these two fields we use another pipeline
+    {
+      //jitni values hai unko toh rakhega hi rakhega balki additional fields ko bhi add kar dega
+      $addFields: {
+         subscribersCount: {
+          //this subscriber is a field so we use $subscribers -> we get our subscribers count
+           $size: "$subscribers"
+         },
+         channelsSubscribedToCount: {
+           $size: "$subscribedTo"
+         },
+         isSubscribed: {
+          $cond: {
+             //agar loggedin honge to req.user hoga
+             //in ->means voh user present hai ya nhi hai
+             //obj mai jaake dekha humne -> subscribers field mai gaye hum phir subscriber se
+             //check kiya ki user loggedin hai ya nhii
+             if: {$in: [req.user?._id , "$subscribers.subscriber"]},
+             //if user is logged in 
+             then: true,
+             //if user is not logged in
+             else: false
+          }
+         }
+      }
+    },
+
+    //add a new field to add a project
+    {
+     //saari values nhi denge , selected values denge
+       $project: {
+        fullname: 1,
+        username: 1,
+        subscribersCount: 1,
+        channelsSubscribedToCount: 1,
+        isSubscribed: 1,
+        avatar: 1,
+        coverImage: 1,
+        email: 1,
+      }
+    }
+
+  ])
+  
+  //mostly aggregation pipelines returns an array , but we need mostly the first ones
+  //if channel hi nhi hai toh optionally channel ka length check kar lete hai
+  if(!channel?.length){
+    throw new ApiError(404 , "Channel does not exist");
+  }
+
+  return res
+  .status(200)
+  .json(
+    //it returns 1st object of the channel
+    new ApiResponse(200 , channel[0] , "user channel fetched Successfully")
+  )
+
+})
 
 export {
   registerUser,
@@ -452,6 +549,7 @@ export {
   getCurrentUser,
   updateAccountDetails,
   updateUserAvatar,
-  updateUserCoverImage
+  updateUserCoverImage,
+  getUserChannelProfile
 }
 
