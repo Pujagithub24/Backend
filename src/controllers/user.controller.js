@@ -4,6 +4,7 @@ import { User } from "../models/user.model.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import jwt from "jsonwebtoken"
+import mongoose from "mongoose";
 
 
 //here asyncHandler is not required -> kyuki hum yaha koi webrequest handle nhi kar rahe hai , yeh humara
@@ -540,6 +541,73 @@ const getUserChannelProfile = asyncHandler(async ( req , res) => {
 
 })
 
+const getWatchHistory = asyncHandler(async ( req , res ) => {
+   const user = await User.aggregate([
+    {
+      //first pipeline
+        $match: {
+          //we create mongoose object id here
+          _id: new mongoose.Types.ObjectId(req.user._id)
+        }
+    },
+
+    {
+      $lookup: {
+        //Videos -> convert to lowercase and plural
+        from: "videos",
+        localField: "watchHistory",
+        foreignField: "_id",
+        as: "watchHistory",
+        //now further jitni pipelines chahiye utni aur laga sakte hai
+        pipeline: [
+          {
+            $lookup: {
+              from: "users",
+              localField: "owner",
+              foreignField: "_id",
+              as: "owner",
+              pipeline: [
+                //owner k andar kya kya data chahiye
+                {
+                  $project: {
+                    fullname: 1,
+                    username: 1,
+                    avatar: 1
+                  }
+                }
+              ]
+            }
+          },
+          {
+            $addFields: {
+              owner: {
+                //field mai se first element nikal diya humne
+                $first: "$owner"
+              }
+              //sidha hi humko object mil gaya owner jisme se .karke saari values we can get
+            }
+          }
+        ]
+      }
+
+
+    }
+   ])
+
+   return res
+   .status(200)
+   .json(
+    new ApiResponse(
+      200 , 
+      user[0].watchHistory ,
+      "watch history fetched successfully"
+    )
+    
+   )
+})
+
+
+
 export {
   registerUser,
   loginUser,
@@ -550,6 +618,7 @@ export {
   updateAccountDetails,
   updateUserAvatar,
   updateUserCoverImage,
-  getUserChannelProfile
+  getUserChannelProfile,
+  getWatchHistory,
 }
 
