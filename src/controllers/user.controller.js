@@ -231,10 +231,10 @@ const logoutUser = asyncHandler( async (req,res) => {
    await User.findByIdAndUpdate(
        req.user._id,
        {
-        //this set is mongodb operator
-        $set: {
-         //refresh token database se remove kar diye
-          refreshToken: undefined
+      
+        $unset: {
+       
+          refreshToken: 1 //this removes the field from document
         }
       },
       {
@@ -602,7 +602,7 @@ const getWatchHistory = asyncHandler(async ( req , res ) => {
       user[0].watchHistory ,
       "watch history fetched successfully"
     )
-    
+
    )
 })
 
